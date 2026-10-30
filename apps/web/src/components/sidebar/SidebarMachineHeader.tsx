@@ -48,16 +48,19 @@ export const SidebarMachineHeader = memo(function SidebarMachineHeader(props: {
         <span className="min-w-0 flex-1 truncate text-xs font-semibold tracking-wide text-sidebar-muted-foreground uppercase">
           {props.label}
         </span>
-        <ConnectionStatusDot
-          dotClassName={connectionPhaseDotClassName(phase)}
-          pingClassName={connectionPhasePingClassName(phase)}
-        />
+        {/* The status and count hide on hover, where the add-project button sits. */}
+        <span className="flex shrink-0 items-center gap-2 group-hover/machine:invisible pointer-coarse:invisible">
+          <ConnectionStatusDot
+            dotClassName={connectionPhaseDotClassName(phase)}
+            pingClassName={connectionPhasePingClassName(phase)}
+          />
+          {collapsed && props.projectCount > 0 ? (
+            <span className="text-xs tabular-nums text-sidebar-muted-foreground">
+              {props.projectCount}
+            </span>
+          ) : null}
+        </span>
         <span className="sr-only">{`, ${phase}`}</span>
-        {collapsed && props.projectCount > 0 ? (
-          <span className="shrink-0 text-xs tabular-nums text-sidebar-muted-foreground group-hover/machine:invisible pointer-coarse:invisible">
-            {props.projectCount}
-          </span>
-        ) : null}
         <ChevronDownIcon
           aria-hidden
           className={cn(
