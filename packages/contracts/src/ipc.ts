@@ -402,6 +402,16 @@ export const DesktopDiscoveredSshHostSchema = Schema.Struct({
   source: DesktopSshHostSourceSchema,
 });
 
+export const DesktopTailscaleMachineSchema = Schema.Struct({
+  name: Schema.String,
+  dnsName: Schema.NullOr(Schema.String),
+  tailnetIpv4: Schema.NullOr(Schema.String),
+  os: Schema.String,
+  online: Schema.Boolean,
+  tailscaleSsh: Schema.Boolean,
+});
+export type DesktopTailscaleMachine = typeof DesktopTailscaleMachineSchema.Type;
+
 export interface DesktopSshEnvironmentBootstrap {
   target: DesktopSshEnvironmentTarget;
   httpBaseUrl: string;
@@ -1041,6 +1051,8 @@ export interface DesktopBridge {
   getConnectionCatalog: () => Promise<string | null>;
   setConnectionCatalog: (catalog: string) => Promise<boolean>;
   discoverSshHosts: () => Promise<readonly DesktopDiscoveredSshHost[]>;
+  /** Other machines on this computer's tailnet; empty when Tailscale is not running. */
+  discoverTailscaleMachines: () => Promise<readonly DesktopTailscaleMachine[]>;
   resolveSshHost: (alias: string) => Promise<DesktopSshEnvironmentTarget>;
   requestSnapShotPermissions: (includeAccessibility: boolean) => Promise<void>;
   getSnapShotState: () => Promise<DesktopSnapShotState>;

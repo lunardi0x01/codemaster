@@ -1143,6 +1143,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["add pair backend host code ssh config agent tunnel saved t3 connect"],
   },
   {
+    id: "tailscale-machines",
+    title: "Tailscale machines",
+    to: "/settings/connections",
+    searchTerms: ["tailnet tailscale ssh machines computers laptops discover add remove"],
+  },
+  {
     id: "load-balancing",
     title: "Load balancing",
     to: "/settings/connections",

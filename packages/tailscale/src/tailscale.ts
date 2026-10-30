@@ -339,6 +339,75 @@ export const readTailscaleExitNode = readTailscaleOutput("status", ["status", "-
   Effect.flatMap(parseTailscaleExitNode),
 );
 
+const TailscalePeersJson = Schema.Struct({
+  Peer: Schema.optional(
+    Schema.Record(
+      Schema.String,
+      Schema.Struct({
+        HostName: Schema.optional(Schema.Unknown),
+        DNSName: Schema.optional(Schema.Unknown),
+        OS: Schema.optional(Schema.Unknown),
+        Online: Schema.optional(Schema.Unknown),
+        TailscaleIPs: Schema.optional(Schema.Unknown),
+        sshHostKeys: Schema.optional(Schema.Unknown),
+      }),
+    ),
+  ),
+});
+
+const decodeTailscalePeersJson = Schema.decodeEffect(Schema.fromJsonString(TailscalePeersJson));
+
+export interface TailscalePeer {
+  /** The tailnet machine name: the MagicDNS label, which follows renames in the admin console. */
+  readonly name: string;
+  /** MagicDNS name without the trailing dot, or null when MagicDNS is off. */
+  readonly dnsName: string | null;
+  readonly tailnetIpv4: string | null;
+  readonly os: string;
+  readonly online: boolean;
+  /** Tailscale SSH publishes host keys only for machines that run it. */
+  readonly tailscaleSsh: boolean;
+}
+
+/** Other machines on the tailnet, by name. Peers without a name or address are left out. */
+export const parseTailscalePeers = (
+  rawStatusJson: string,
+): Effect.Effect<readonly TailscalePeer[], TailscaleStatusParseError> =>
+  decodeTailscalePeersJson(rawStatusJson).pipe(
+    Effect.mapError((cause) => new TailscaleStatusParseError({ cause })),
+    Effect.map((parsed) =>
+      Object.values(parsed.Peer ?? {})
+        .flatMap((peer): TailscalePeer[] => {
+          const dnsName =
+            typeof peer.DNSName === "string" ? peer.DNSName.trim().replace(/\.$/u, "") : "";
+          const hostName = typeof peer.HostName === "string" ? peer.HostName.trim() : "";
+          const tailnetIpv4 = Array.isArray(peer.TailscaleIPs)
+            ? (peer.TailscaleIPs.find(
+                (address): address is string =>
+                  typeof address === "string" && isTailscaleIpv4Address(address),
+              ) ?? null)
+            : null;
+          const name = dnsName.split(".")[0] || hostName;
+          if (!name || (!dnsName && tailnetIpv4 === null)) return [];
+          return [
+            {
+              name,
+              dnsName: dnsName || null,
+              tailnetIpv4,
+              os: typeof peer.OS === "string" ? peer.OS : "",
+              online: peer.Online === true,
+              tailscaleSsh: Array.isArray(peer.sshHostKeys) && peer.sshHostKeys.length > 0,
+            },
+          ];
+        })
+        .toSorted((left, right) => left.name.localeCompare(right.name)),
+    ),
+  );
+
+export const readTailscalePeers = readTailscaleOutput("status", ["status", "--json"]).pipe(
+  Effect.flatMap(parseTailscalePeers),
+);
+
 const TailscalePrefsJson = Schema.Struct({
   RunSSH: Schema.optional(Schema.Unknown),
   WantRunning: Schema.optional(Schema.Unknown),

@@ -10,6 +10,7 @@ import * as HostProcess from "@t3tools/shared/HostProcess";
 import {
   ensureTailscaleServe,
   parseTailscaleExitNode,
+  parseTailscalePeers,
   parseTailscaleSshEnabled,
   parseTailscaleStatus,
   readTailscaleSshEnabled,
@@ -126,6 +127,52 @@ describe("tailscale", () => {
       assert.deepEqual(unnamed, { name: null, online: false });
 
       assert.equal(yield* parseTailscaleExitNode(tailscaleStatusJson), null);
+    }),
+  );
+
+  it.effect("lists tailnet peers by machine name", () =>
+    Effect.gen(function* () {
+      const peers = yield* parseTailscalePeers(
+        JSON.stringify({
+          Self: { DNSName: "desktop.tail.ts.net." },
+          Peer: {
+            "nodekey:a": {
+              HostName: "surface-black",
+              DNSName: "surface.tail.ts.net.",
+              OS: "linux",
+              Online: true,
+              TailscaleIPs: ["100.102.185.114", "fd7a:115c:a1e0::fd3b:b973"],
+              sshHostKeys: ["ssh-ed25519 AAAA"],
+            },
+            "nodekey:b": {
+              HostName: "Pixel 11 Pro",
+              DNSName: "",
+              OS: "android",
+              TailscaleIPs: ["100.79.61.69"],
+            },
+            "nodekey:c": { HostName: "", DNSName: "", TailscaleIPs: [] },
+          },
+        }),
+      );
+      assert.deepEqual(peers, [
+        {
+          name: "Pixel 11 Pro",
+          dnsName: null,
+          tailnetIpv4: "100.79.61.69",
+          os: "android",
+          online: false,
+          tailscaleSsh: false,
+        },
+        {
+          name: "surface",
+          dnsName: "surface.tail.ts.net",
+          tailnetIpv4: "100.102.185.114",
+          os: "linux",
+          online: true,
+          tailscaleSsh: true,
+        },
+      ]);
+      assert.deepEqual(yield* parseTailscalePeers(tailscaleStatusJson), []);
     }),
   );
 

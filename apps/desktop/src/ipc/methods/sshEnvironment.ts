@@ -8,6 +8,7 @@ import { fetchRemoteEnvironmentDescriptor } from "@t3tools/client-runtime/enviro
 import {
   EnvironmentAuthInvalidError,
   DesktopDiscoveredSshHostSchema,
+  DesktopTailscaleMachineSchema,
   DesktopSshBearerBootstrapInputSchema,
   DesktopSshBearerRequestInputSchema,
   DesktopSshEnvironmentEnsureInputSchema,
@@ -25,6 +26,7 @@ import {
   AuthSessionState,
 } from "@t3tools/contracts";
 import { SshHttpBridgeError } from "@t3tools/ssh/errors";
+import { readTailscalePeers } from "@t3tools/tailscale";
 import { resolveLoopbackSshHttpBaseUrl } from "@t3tools/ssh/tunnel";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
@@ -112,6 +114,16 @@ export const discoverSshHosts = DesktopIpc.makeIpcMethod({
   handler: Effect.fn("desktop.ipc.sshEnvironment.discoverHosts")(function* () {
     const sshEnvironment = yield* DesktopSshEnvironment.DesktopSshEnvironment;
     return yield* sshEnvironment.discoverHosts();
+  }),
+});
+
+export const discoverTailscaleMachines = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.DISCOVER_TAILSCALE_MACHINES_CHANNEL,
+  payload: Schema.Void,
+  result: Schema.Array(DesktopTailscaleMachineSchema),
+  handler: Effect.fn("desktop.ipc.sshEnvironment.discoverTailscaleMachines")(function* () {
+    // No Tailscale CLI, or tailscaled stopped, means no tailnet machines to offer.
+    return yield* readTailscalePeers.pipe(Effect.orElseSucceed(() => []));
   }),
 });
 
