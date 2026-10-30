@@ -32,6 +32,7 @@ import {
   type SidebarListMarker,
   type SidebarSection,
   resolveSidebarDropVerb,
+  groupSidebarFoldersByMachine,
   groupSidebarThreadsByProject,
   resolveSidebarFolderDot,
   sidebarFolderExpansionKeys,
@@ -1408,6 +1409,45 @@ describe("groupSidebarThreadsByProject", () => {
       { projectKey: "fleet", threads: [] },
     ]);
     expect(summarize(false)).toEqual([{ projectKey: "t3code", threads: ["a", "b"] }]);
+  });
+});
+
+describe("groupSidebarFoldersByMachine", () => {
+  it("puts this machine first, the rest by name, and keeps machines without projects", () => {
+    const laptop = EnvironmentId.make("environment-laptop");
+    const archbox = EnvironmentId.make("environment-archbox");
+    const unknown = EnvironmentId.make("environment-gone");
+    const folder = (name: string, environmentId: EnvironmentId) => ({
+      name,
+      group: { environmentId },
+    });
+
+    const sections = groupSidebarFoldersByMachine({
+      folders: [
+        folder("api", laptop),
+        folder("web", localEnvironmentId),
+        folder("old", unknown),
+        folder("cli", laptop),
+      ],
+      machines: [
+        { environmentId: laptop, label: "laptop" },
+        { environmentId: archbox, label: "archbox" },
+        { environmentId: localEnvironmentId, label: "zeus" },
+      ],
+      primaryEnvironmentId: localEnvironmentId,
+    });
+
+    expect(
+      sections.map((section) => ({
+        label: section.label,
+        folders: section.folders.map((entry) => entry.name),
+      })),
+    ).toEqual([
+      { label: "zeus", folders: ["web"] },
+      { label: "archbox", folders: [] },
+      { label: "environment-gone", folders: ["old"] },
+      { label: "laptop", folders: ["api", "cli"] },
+    ]);
   });
 });
 

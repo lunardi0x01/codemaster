@@ -422,6 +422,15 @@ export function useBoringSidebarEnabled(): boolean {
   );
 }
 
+/** Machine sections need the folder sidebar, which draws the project folders they hold. */
+export function useSidebarGroupByMachine(): boolean {
+  return useClientSettings(
+    (settings) =>
+      (settings.boringSidebarEnabled || settings.legacySidebarEnabled) &&
+      settings.sidebarGroupByMachine,
+  );
+}
+
 export async function prepareModelPreferencesPatch(
   settings: ServerSettings,
   patch: ServerSettingsPatch,

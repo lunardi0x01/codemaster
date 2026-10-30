@@ -456,6 +456,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["beta boring sidebar folder rows multiline branch pull request details"],
   },
   {
+    id: "sidebar-group-by-machine",
+    title: "Group folders by machine",
+    to: "/settings/labs",
+    searchTerms: ["beta boring sidebar machine computer environment host ssh remote sections"],
+  },
+  {
     id: "guest-links",
     title: "Guest links",
     to: "/settings/labs",

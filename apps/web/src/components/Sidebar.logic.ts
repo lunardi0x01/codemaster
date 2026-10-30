@@ -948,6 +948,48 @@ export function groupSidebarThreadsByProject<
   return keepEmpty ? folders : folders.filter((folder) => folder.threads.length > 0);
 }
 
+/**
+ * Machine sections for the folder sidebar: this machine first, then the rest by
+ * name. Every known machine gets a section, even without projects, so a project
+ * can be added to it; folders keep their order within a section.
+ */
+export function groupSidebarFoldersByMachine<
+  TFolder extends { readonly group: { readonly environmentId: EnvironmentId } },
+>(input: {
+  readonly folders: readonly TFolder[];
+  readonly machines: ReadonlyArray<{
+    readonly environmentId: EnvironmentId;
+    readonly label: string;
+  }>;
+  readonly primaryEnvironmentId: EnvironmentId | null;
+}): Array<{ environmentId: EnvironmentId; label: string; folders: TFolder[] }> {
+  const sections = new Map<
+    EnvironmentId,
+    { environmentId: EnvironmentId; label: string; folders: TFolder[] }
+  >();
+  for (const machine of input.machines) {
+    sections.set(machine.environmentId, {
+      environmentId: machine.environmentId,
+      label: machine.label,
+      folders: [],
+    });
+  }
+  for (const folder of input.folders) {
+    const environmentId = folder.group.environmentId;
+    let section = sections.get(environmentId);
+    if (section === undefined) {
+      section = { environmentId, label: environmentId, folders: [] };
+      sections.set(environmentId, section);
+    }
+    section.folders.push(folder);
+  }
+  return [...sections.values()].toSorted((left, right) => {
+    if (left.environmentId === input.primaryEnvironmentId) return -1;
+    if (right.environmentId === input.primaryEnvironmentId) return 1;
+    return left.label.localeCompare(right.label);
+  });
+}
+
 export type SidebarV2TopStatusKind =
   | "approval"
   | "done"

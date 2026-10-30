@@ -18,6 +18,7 @@ export function LabsSettingsPanel() {
       <SettingsSection id="beta" title="Beta">
         <BoringSidebarRow />
         <BoringSidebarMultilineRow />
+        <SidebarGroupByMachineRow />
         {/* Clerk is only mounted when this build has T3 Connect. */}
         {hasCloudPublicConfig() ? <GuestLinksRowWithSignIn /> : <GuestLinksRow />}
         <LinkedEnvironmentsRow />
@@ -63,6 +64,24 @@ function BoringSidebarMultilineRow() {
             updateSettings({ boringSidebarMultilineRows: Boolean(checked) })
           }
           aria-label="Two-line folder rows"
+        />
+      }
+    />
+  );
+}
+
+function SidebarGroupByMachineRow() {
+  const settings = useScopedSettings();
+  const updateSettings = useUpdateScopedSettings();
+  return (
+    <SettingsRow
+      {...searchableSetting("sidebar-group-by-machine")}
+      description="In the boring sidebar, list each machine with its own project folders under it, including machines with no projects yet."
+      control={
+        <Switch
+          checked={settings.sidebarGroupByMachine}
+          onCheckedChange={(checked) => updateSettings({ sidebarGroupByMachine: Boolean(checked) })}
+          aria-label="Group folders by machine"
         />
       }
     />

@@ -251,7 +251,11 @@ function openIntentView(intent: CommandPaletteOpenIntent | null): CommandPalette
     case "add-project":
       return {
         addonIcon: <FolderPlusIcon className={ADDON_ICON_CLASS} />,
-        groups: [{ value: ADD_PROJECT_ENTRY_GROUP, label: "", items: [] }],
+        groups: [
+          intent.environmentId
+            ? { value: `sources:${intent.environmentId}`, label: "Sources", items: [] }
+            : { value: ADD_PROJECT_ENTRY_GROUP, label: "", items: [] },
+        ],
       };
     case "new-thread-in":
       return {
@@ -472,7 +476,8 @@ function OpenCommandPaletteDialog(props: {
   const [browseGeneration, setBrowseGeneration] = useState(0);
   const [browseNavigation] = useState(createBrowseNavigationCoordinator);
   const [addProjectEnvironmentId, setAddProjectEnvironmentId] = useState<EnvironmentId | null>(
-    null,
+    () =>
+      (props.openIntent?.kind === "add-project" ? props.openIntent.environmentId : null) ?? null,
   );
   const [isPickingProjectFolder, setIsPickingProjectFolder] = useState(false);
   const [addProjectCloneFlow, setAddProjectCloneFlow] = useState<AddProjectCloneFlow | null>(null);

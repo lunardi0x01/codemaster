@@ -126,7 +126,11 @@ import { useTerminalFocus } from "../hooks/useTerminalFocus";
 import { isCommandPaletteOpen, openCommandPalette } from "../commandPaletteBus";
 import { registerSettleAndAdvance } from "../settleAndAdvance";
 import { startNewThreadFromContext } from "../lib/chatThreadActions";
-import { useBoringSidebarEnabled, useClientSettings } from "../hooks/useSettings";
+import {
+  useBoringSidebarEnabled,
+  useClientSettings,
+  useSidebarGroupByMachine,
+} from "../hooks/useSettings";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useNowMinute } from "../hooks/useNowMinute";
@@ -172,6 +176,7 @@ import {
 import {
   applySidebarThreadDrop,
   filterSidebarV2VisibleThreads,
+  groupSidebarFoldersByMachine,
   groupSidebarThreadsByProject,
   sidebarFolderExpansionKeys,
   buildBulkTitleRegenerationContextMenuItem,
@@ -256,6 +261,7 @@ import {
   SidebarProjectFolderHeader,
   sidebarFolderRowId,
 } from "./sidebar/SidebarProjectFolderHeader";
+import { SidebarMachineHeader } from "./sidebar/SidebarMachineHeader";
 import {
   SidebarDragBoundary,
   SidebarSectionHeader,
@@ -319,6 +325,9 @@ const SETTLED_TAIL_PAGE_COUNT = 25;
 const SETTLED_SHELF_EXPANDED_KEY = "t3code:sidebar:settled-expanded";
 const SNOOZED_SHELF_EXPANDED_KEY = "t3code:sidebar:snoozed-expanded";
 const WORKING_SHELF_EXPANDED_KEY = "t3code:sidebar:working-expanded";
+const COLLAPSED_MACHINES_KEY = "codemaster:sidebar:collapsed-machines";
+const COLLAPSED_MACHINES_SCHEMA = Schema.Array(Schema.String);
+const NO_COLLAPSED_MACHINES: ReadonlyArray<string> = [];
 
 const inboxReturns = createInboxReturnTracker();
 
@@ -967,6 +976,13 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     },
   });
   const boringSidebarEnabled = useBoringSidebarEnabled();
+  const groupByMachine = useSidebarGroupByMachine();
+  const machineIdentities = useEnvironmentIdentities();
+  const [collapsedMachineIds, setCollapsedMachineIds] = useLocalStorage(
+    COLLAPSED_MACHINES_KEY,
+    NO_COLLAPSED_MACHINES,
+    COLLAPSED_MACHINES_SCHEMA,
+  );
   const folderRowsMultiline = useClientSettings((settings) => settings.boringSidebarMultilineRows);
   const newThreadContext = useHandleNewThread();
   // Row callbacks capture only the handler; the rest of the context changes with the route.
@@ -1202,6 +1218,17 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       openProjectSettings(projectGroup);
     },
   );
+  const toggleMachine = useStableCallback((environmentId: EnvironmentId) => {
+    setCollapsedMachineIds((ids) =>
+      ids.includes(environmentId)
+        ? ids.filter((id) => id !== environmentId)
+        : [...ids, environmentId],
+    );
+  });
+  const addProjectOnMachine = useStableCallback((environmentId: EnvironmentId) => {
+    if (isMobile) setOpenMobile(false);
+    openCommandPalette({ open: "add-project", environmentId });
+  });
   const startThreadInProjectFolder = useStableCallback((group: SidebarProjectSnapshot) => {
     if (isMobile) setOpenMobile(false);
     void handleNewThread(scopeProjectRef(group.environmentId, group.id));
@@ -1286,7 +1313,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         ? projectGroups
         : scopedProjectGroups
       : null,
-    keepEmptyFolders: scopedProjectGroups.length > 0,
+    keepEmptyFolders: scopedProjectGroups.length > 0 || groupByMachine,
   });
 
   // Ranked across environments as the palette ranks them, so one
@@ -3324,7 +3351,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           continue;
                         }
                         if (projectFolders !== null && item.marker === "active-placeholder") {
-                          for (const folder of projectFolders) {
+                          const pushFolder = (folder: (typeof projectFolders)[number]) => {
                             items.push(
                               <SidebarProjectFolderHeader
                                 key={`project-folder:${folder.group.projectKey}`}
@@ -3345,6 +3372,32 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                 ),
                               );
                             }
+                          };
+                          if (!groupByMachine) {
+                            projectFolders.forEach(pushFolder);
+                            continue;
+                          }
+                          const machineSections = groupSidebarFoldersByMachine({
+                            folders: projectFolders,
+                            machines: machineIdentities,
+                            primaryEnvironmentId,
+                          });
+                          for (const section of machineSections) {
+                            const machineCollapsed = collapsedMachineIds.includes(
+                              section.environmentId,
+                            );
+                            items.push(
+                              <SidebarMachineHeader
+                                key={`machine:${section.environmentId}`}
+                                environmentId={section.environmentId}
+                                label={section.label}
+                                collapsed={machineCollapsed}
+                                projectCount={section.folders.length}
+                                onToggle={toggleMachine}
+                                onAddProject={addProjectOnMachine}
+                              />,
+                            );
+                            if (!machineCollapsed) section.folders.forEach(pushFolder);
                           }
                           continue;
                         }

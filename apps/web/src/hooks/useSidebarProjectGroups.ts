@@ -1,13 +1,20 @@
 import { orderItemsByPreferredIds, sortSidebarV2ProjectGroups } from "../components/Sidebar.logic";
 import {
   getProjectOrderKey,
+  type ProjectGroupingSettings,
   selectProjectGroupingSettings,
 } from "@t3tools/client-runtime/state/project-grouping";
 import { buildSidebarProjectSnapshots } from "../sidebarProjectGrouping";
 import { useEnvironmentIdentities, usePrimaryEnvironmentId } from "../state/environments";
 import { useDelegatedUnderParent, useProjects, useQuietThreadShells } from "../state/entities";
 import { legacyProjectCwdPreferenceKey, useUiStateStore } from "../uiStateStore";
-import { useClientSettings } from "./useSettings";
+import { useClientSettings, useSidebarGroupByMachine } from "./useSettings";
+
+// Under machine sections a folder is one machine's checkout, never a repository merged across machines.
+const PER_MACHINE_GROUPING: ProjectGroupingSettings = {
+  sidebarProjectGroupingMode: "separate",
+  sidebarProjectGroupingOverrides: {},
+};
 
 export function useSidebarProjectGroups() {
   const projects = useProjects();
@@ -18,6 +25,7 @@ export function useSidebarProjectGroups() {
   const projectOrder = useUiStateStore((store) => store.projectOrder);
   const sortOrder = useClientSettings((s) => s.sidebarProjectSortOrder);
   const groupingSettings = useClientSettings(selectProjectGroupingSettings);
+  const groupByMachine = useSidebarGroupByMachine();
   const environments = useEnvironmentIdentities();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const orderedProjects = orderItemsByPreferredIds({
@@ -34,8 +42,8 @@ export function useSidebarProjectGroups() {
   );
   const unsortedGroups = buildSidebarProjectSnapshots({
     projects: sortOrder === "manual" ? orderedProjects : projects,
-    groupScratchProjects: true,
-    settings: groupingSettings,
+    groupScratchProjects: !groupByMachine,
+    settings: groupByMachine ? PER_MACHINE_GROUPING : groupingSettings,
     primaryEnvironmentId,
     resolveEnvironmentLabel: (environmentId) => labels.get(environmentId) ?? null,
   });
