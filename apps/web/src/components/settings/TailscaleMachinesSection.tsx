@@ -9,7 +9,7 @@ import { useState } from "react";
 
 import { environmentCatalog } from "~/connection/catalog";
 import { connectSshEnvironment as connectSshEnvironmentAtom } from "~/connection/onboarding";
-import type { EnvironmentPresentation } from "~/state/environments";
+import { useEnvironments } from "~/state/environments";
 import { useEnvironmentQuery } from "~/state/query";
 import { tailscaleMachinesStateAtom } from "~/state/tailscaleMachines";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -27,20 +27,42 @@ import {
 
 const NO_MACHINES: ReadonlyArray<DesktopTailscaleMachine> = [];
 
+/** Settings home of the tailnet machine list, with a refresh action. */
+export function TailscaleMachinesSection() {
+  const machinesQuery = useEnvironmentQuery(tailscaleMachinesStateAtom);
+  return (
+    <SettingsSection
+      {...searchableSetting("tailscale-machines")}
+      headerAction={
+        <Button
+          size="icon-xs"
+          variant="ghost-muted"
+          aria-label="Refresh tailnet machines"
+          disabled={machinesQuery.isPending}
+          onClick={machinesQuery.refresh}
+        >
+          <RefreshCwIcon aria-hidden />
+        </Button>
+      }
+    >
+      <TailscaleMachineList />
+    </SettingsSection>
+  );
+}
+
 /**
  * Machines on this computer's tailnet. Switching one on connects it over SSH as an
  * environment, so it shows in the sidebar; switching it off removes that environment.
  */
-export function TailscaleMachinesSection(props: {
-  readonly savedEnvironments: ReadonlyArray<EnvironmentPresentation>;
-}) {
+export function TailscaleMachineList() {
   const machinesQuery = useEnvironmentQuery(tailscaleMachinesStateAtom);
   const machines = machinesQuery.data ?? NO_MACHINES;
+  const { environments } = useEnvironments();
   const connectSshEnvironment = useAtomCommand(connectSshEnvironmentAtom, { reportFailure: false });
   const removeEnvironment = useAtomCommand(environmentCatalog.remove, { reportFailure: false });
   const [busyMachine, setBusyMachine] = useState<string | null>(null);
 
-  const savedSshTargets = props.savedEnvironments.flatMap((environment) => {
+  const savedSshTargets = environments.flatMap((environment) => {
     const profile = environment.entry.profile;
     return Option.isSome(profile) && profile.value._tag === "SshConnectionProfile"
       ? [{ environmentId: environment.environmentId, target: profile.value.target }]
@@ -78,20 +100,7 @@ export function TailscaleMachinesSection(props: {
   };
 
   return (
-    <SettingsSection
-      {...searchableSetting("tailscale-machines")}
-      headerAction={
-        <Button
-          size="icon-xs"
-          variant="ghost-muted"
-          aria-label="Refresh tailnet machines"
-          disabled={machinesQuery.isPending}
-          onClick={machinesQuery.refresh}
-        >
-          <RefreshCwIcon aria-hidden />
-        </Button>
-      }
-    >
+    <>
       {machines.length === 0 ? (
         <SettingsRow
           title={machinesQuery.isPending ? "Looking for tailnet machines…" : "No tailnet machines"}
@@ -128,6 +137,6 @@ export function TailscaleMachinesSection(props: {
           />
         );
       })}
-    </SettingsSection>
+    </>
   );
 }

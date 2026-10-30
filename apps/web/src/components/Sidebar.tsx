@@ -261,7 +261,8 @@ import {
   SidebarProjectFolderHeader,
   sidebarFolderRowId,
 } from "./sidebar/SidebarProjectFolderHeader";
-import { SidebarMachineHeader } from "./sidebar/SidebarMachineHeader";
+import { SidebarAddComputerRow, SidebarMachineHeader } from "./sidebar/SidebarMachineHeader";
+import { AddComputerDialog, openAddComputerDialog } from "./sidebar/AddComputerDialog";
 import {
   SidebarDragBoundary,
   SidebarSectionHeader,
@@ -1887,6 +1888,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     // Boring mode keeps a project the user filtered to, so it can start a thread.
     if (
       !hasProjectFolders &&
+      !groupByMachine &&
       pinnedThreads.length +
         activeThreads.length +
         workingThreads.length +
@@ -3399,6 +3401,12 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             );
                             if (!machineCollapsed) section.folders.forEach(pushFolder);
                           }
+                          items.push(
+                            <SidebarAddComputerRow
+                              key="add-computer"
+                              onAddComputer={openAddComputerDialog}
+                            />,
+                          );
                           continue;
                         }
                         switch (item.marker) {
@@ -3545,6 +3553,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
           ) : null}
           {!isSearchingThreads &&
           !hasProjectFolders &&
+          !groupByMachine &&
           visibleDraftSessionCount === 0 &&
           pinnedThreads.length +
             activeThreads.length +
@@ -3577,6 +3586,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         </SidebarGroup>
       </SidebarContent>
       <SidebarChromeFooter />
+      <AddComputerDialog />
     </>
   );
 }

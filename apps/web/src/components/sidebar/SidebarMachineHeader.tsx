@@ -1,5 +1,5 @@
 import { type EnvironmentId, resolveEnvironmentMachineKind } from "@t3tools/contracts";
-import { ChevronDownIcon, FolderPlusIcon } from "lucide-react";
+import { ChevronDownIcon, FolderPlusIcon, MonitorSmartphoneIcon } from "lucide-react";
 import { memo } from "react";
 
 import { cn } from "~/lib/utils";
@@ -83,3 +83,20 @@ export const SidebarMachineHeader = memo(function SidebarMachineHeader(props: {
     </li>
   );
 });
+
+/** Closes the machine sections with the way to add another computer. */
+export function SidebarAddComputerRow(props: { onAddComputer: () => void }) {
+  return (
+    <li className="mt-3 list-none">
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={props.onAddComputer}
+        className="flex h-8 w-full cursor-pointer items-center gap-2 rounded-(--control-radius) px-(--sidebar-row-content-inset) text-left text-xs text-sidebar-muted-foreground outline-none hover:bg-sidebar-row-hover hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <MonitorSmartphoneIcon aria-hidden className="size-4 shrink-0" />
+        Add computer
+      </button>
+    </li>
+  );
+}

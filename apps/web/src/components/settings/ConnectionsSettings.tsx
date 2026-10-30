@@ -1516,7 +1516,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
           savedEnvironments={savedEnvironments}
         />
       </SettingsSection>
-      {desktopBridge ? <TailscaleMachinesSection savedEnvironments={savedEnvironments} /> : null}
+      {desktopBridge ? <TailscaleMachinesSection /> : null}
       {hasCloudPublicConfig() ? (
         <RemoveT3ConnectEnvironmentDialog
           environmentLabel={pendingT3ConnectRemoval?.label ?? null}

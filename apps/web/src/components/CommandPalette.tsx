@@ -68,6 +68,7 @@ import {
   RotateCcwIcon,
   SettingsIcon,
   MonitorIcon,
+  MonitorSmartphoneIcon,
   SquarePenIcon,
   TextSearchIcon,
   UserPlusIcon,
@@ -115,6 +116,7 @@ import { useAtomQueryRunner } from "../state/use-atom-query-runner";
 import { useScratchProject } from "../hooks/useScratchProject";
 import { useStartTriage } from "../hooks/useStartTriage";
 import { pickTriageEnvironment } from "../lib/triageTarget";
+import { openAddComputerDialog } from "./sidebar/AddComputerDialog";
 import { useNewProject } from "../hooks/useNewProject";
 import {
   useEnvironmentProviders,
@@ -915,6 +917,20 @@ function OpenCommandPaletteDialog(props: {
     void navigate({ to: "/settings/source-control" });
   };
 
+  // A project can only go on a connected machine, so offer to connect another one first.
+  const addComputerItem: CommandPaletteActionItem = {
+    kind: "action",
+    value: "action:add-project:add-computer",
+    searchTerms: ["computer", "machine", "remote", "ssh", "tailscale", "tailnet", "laptop"],
+    title: "Another computer",
+    description: "Connect a computer on your tailnet or over SSH",
+    icon: <MonitorSmartphoneIcon className={ITEM_ICON_CLASS} />,
+    run: async () => {
+      setOpen(false);
+      openAddComputerDialog();
+    },
+  };
+
   const buildAddProjectSourceGroups = (
     environmentId: EnvironmentId,
     readinessBySource: AddProjectRemoteSourceReadiness,
@@ -932,6 +948,7 @@ function OpenCommandPaletteDialog(props: {
           await startAddProjectBrowse(environmentId);
         },
       },
+      addComputerItem,
     ];
 
     if (newProjectsRootFor(environmentId) !== null) {
@@ -1081,7 +1098,7 @@ function OpenCommandPaletteDialog(props: {
     {
       value: "environments",
       label: "Environments",
-      items: addProjectEnvironmentItems,
+      items: [...addProjectEnvironmentItems, addComputerItem],
     },
   ];
 
